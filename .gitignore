@@ -1,0 +1,36 @@
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Java / Maven
+backend/target/
+backend/.mvn/
+backend/*.jar
+*.class
+
+# Go binaries
+agent/nexusops-agent
+agent/nexusops-agent-armv7
+
+# Logs & temp
+*.log
+logs/
+temp/
+tmp/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db

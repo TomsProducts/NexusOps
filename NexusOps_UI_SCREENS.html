@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NexusOps UI Screen Reference</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#050912;color:#e7f1ff;font-family:Inter,system-ui,sans-serif}
+header{padding:24px 32px;border-bottom:1px solid #1a2a41;background:#08101d;position:sticky;top:0;z-index:5}
+h1{margin:0;font-size:22px}header p{color:#71839e;font-size:11px}
+nav{display:flex;gap:7px;flex-wrap:wrap;padding:16px 32px;background:#070e19;border-bottom:1px solid #17263b}
+button{background:#0c1728;color:#8fa5c0;border:1px solid #20334d;border-radius:6px;padding:8px 11px;cursor:pointer;font-size:10px}
+button.active,button:hover{border-color:#19d9ff;color:#19d9ff;background:#0b1b2b}
+.screen{display:none;padding:28px;max-width:1500px;margin:auto}.screen.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.wide{grid-column:span 2}
+.card{background:linear-gradient(145deg,#0c1626,#08111e);border:1px solid #1a2b43;border-radius:10px;padding:18px;min-height:130px;box-shadow:0 0 25px #19d9ff0b}
+.card h2{font-size:13px;margin:0 0 12px}.muted{color:#70839e;font-size:10px}.value{font-size:27px;font-weight:700;margin:8px 0}.cyan{color:#19d9ff}.green{color:#27e29b}.red{color:#ff4d6d}.yellow{color:#ffc857}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #17263b;font-size:10px}.pill{font-size:8px;padding:4px 7px;border-radius:12px;background:#19d9ff12;border:1px solid #19d9ff33;color:#19d9ff}
+.chat{background:#070f1c;border:1px solid #1b2d45;border-radius:9px;padding:12px}.bubble{padding:10px;margin:7px 0;border-radius:7px;font-size:10px;line-height:1.5}.ai{background:#17112b;border:1px solid #8c5cff33}.user{background:#0c1b2a;border:1px solid #19d9ff22;margin-left:20%}
+.form{max-width:420px;margin:50px auto}.input{width:100%;background:#080f1b;color:white;border:1px solid #20334d;padding:12px;border-radius:6px;margin:5px 0 10px}.action{border-left:3px solid #ffc857}.critical{border-left:3px solid #ff4d6d}.safe{border-left:3px solid #27e29b}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}}
+</style>
+</head>
+<body>
+<header><h1>NEXUSOPS — Application Screen Reference</h1><p>Secondary visual reference for the coding agent. Match the main dashboard style and reuse its components.</p></header>
+<nav id="nav">
+<button class="active" data-screen="login">Login</button>
+<button data-screen="dashboard">Dashboard</button>
+<button data-screen="servers">Servers</button>
+<button data-screen="server">Server Detail</button>
+<button data-screen="incident">Incident Detail</button>
+<button data-screen="ai">AI Assistant</button>
+<button data-screen="actions">Actions</button>
+<button data-screen="alerts">Alerts</button>
+<button data-screen="audit">Audit Log</button>
+<button data-screen="settings">Settings</button>
+<button data-screen="mobile">Mobile</button>
+</nav>
+
+<section class="screen active" id="login"><div class="card form"><h2 style="font-size:20px">NEXUSOPS</h2><p class="muted">AI IT Operations Platform</p><label class="muted">Email</label><input class="input" placeholder="admin@company.com"><label class="muted">Password</label><input class="input" type="password" placeholder="••••••••"><button style="width:100%;margin-top:7px">SIGN IN</button></div></section>
+
+<section class="screen" id="dashboard"><div class="grid">
+<div class="card"><div class="muted">SYSTEM HEALTH</div><div class="value green">92/100</div><span class="muted">↑ 4.2% today</span></div>
+<div class="card"><div class="muted">SERVERS</div><div class="value">24</div><span class="green">21 healthy</span></div>
+<div class="card"><div class="muted">CRITICAL</div><div class="value red">01</div><span class="muted">requires attention</span></div>
+<div class="card wide"><h2>Infrastructure Map</h2><div style="height:250px;border:1px solid #172b43;border-radius:7px;display:grid;place-items:center;color:#19d9ff">LIVE TOPOLOGY / NODE GRAPH</div></div>
+<div class="card"><h2>AI Operations</h2><div class="critical" style="padding:12px;background:#ff4d6d08"><b style="font-size:11px">Database01 disk at 94%</b><p class="muted">Binary log growth detected. Estimated exhaustion: 7h 42m.</p><span class="cyan">AI confidence 92%</span></div></div>
+</div></section>
+
+<section class="screen" id="servers"><div class="card"><h2>Server Fleet</h2>
+<div class="row"><span>● database01</span><span class="red">CRITICAL · CPU 61% · MEM 72% · DISK 94%</span></div>
+<div class="row"><span>● database02</span><span class="green">HEALTHY · CPU 43% · MEM 61% · DISK 67%</span></div>
+<div class="row"><span>● api-server-02</span><span class="yellow">WARNING · CPU 74% · MEM 86%</span></div>
+<div class="row"><span>● web-01</span><span class="green">HEALTHY</span></div>
+</div></section>
+
+<section class="screen" id="server"><div class="grid">
+<div class="card wide"><h2>database01</h2><p class="muted">Linux · Production · agent 1.8.2 · online</p><div class="grid" style="margin-top:15px"><div class="card"><span class="muted">CPU</span><div class="value">61%</div></div><div class="card"><span class="muted">MEMORY</span><div class="value">72%</div></div><div class="card"><span class="muted">DISK</span><div class="value red">94%</div></div></div></div>
+<div class="card"><h2>Services</h2><div class="row">mariadb <span class="green">RUNNING</span></div><div class="row">agent <span class="green">RUNNING</span></div><div class="row">backup <span class="yellow">SLOW</span></div></div>
+</div></section>
+
+<section class="screen" id="incident"><div class="grid">
+<div class="card wide critical"><h2>INC-1042 · Database01 disk usage at 94%</h2><p class="muted">Critical · Open · Production · detected 2 minutes ago</p><h2 style="margin-top:24px">AI Analysis</h2><p style="font-size:11px;line-height:1.7">Rapid binary-log growth is the most probable cause. Current growth rate suggests storage exhaustion in approximately 7h 42m.</p><div class="row"><span>Confidence</span><b class="cyan">92%</b></div><div class="row"><span>Impact</span><b class="red">HIGH</b></div><div class="row"><span>Recommendation</span><b>Archive/rotate eligible logs</b></div></div>
+<div class="card"><h2>Timeline</h2><div class="row">Disk 90% <span>1h ago</span></div><div class="row">Disk 92% <span>24m ago</span></div><div class="row">Disk 94% <span>2m ago</span></div></div>
+</div></section>
+
+<section class="screen" id="ai"><div class="grid">
+<div class="card wide"><h2>AI Operations Assistant</h2><div class="chat"><div class="bubble ai"><b>AI</b><br>I found one critical condition on database01. Binary logs are growing at approximately 1.7 GB/hour.</div><div class="bubble user">Why is the disk filling?</div><div class="bubble ai"><b>AI</b><br>The strongest evidence is binary-log growth combined with recent storage trend acceleration. I recommend a policy-approved log rotation/archival action.</div></div></div>
+<div class="card"><h2>Suggested Actions</h2><div class="row">Collect diagnostics <span class="green">SAFE</span></div><div class="row">Rotate logs <span class="green">SAFE</span></div><div class="row">Restart database <span class="red">HIGH</span></div></div>
+</div></section>
+
+<section class="screen" id="actions"><div class="card"><h2>Remediation Actions</h2>
+<div class="row action"><span><b>Rotate logs</b><br><span class="muted">database01 · Incident INC-1042</span></span><span class="green">APPROVED</span><button>EXECUTE</button></div>
+<div class="row action"><span><b>Collect diagnostics</b><br><span class="muted">api-server-02</span></span><span class="green">SAFE</span><button>RUN</button></div>
+<div class="row critical"><span><b>Restart MariaDB</b><br><span class="muted">database01</span></span><span class="red">HIGH RISK</span><button>APPROVAL REQUIRED</button></div>
+</div></section>
+
+<section class="screen" id="alerts"><div class="card"><h2>Alert Center</h2><div class="row">Database disk > 90% <span class="red">CRITICAL</span></div><div class="row">API memory > 80% <span class="yellow">WARNING</span></div><div class="row">Backup duration > threshold <span class="yellow">WARNING</span></div></div></section>
+
+<section class="screen" id="audit"><div class="card"><h2>Audit Log</h2><div class="row"><span>AI analysis generated · INC-1042</span><span>2m</span></div><div class="row"><span>Action approved · Rotate logs</span><span>3m</span></div><div class="row"><span>Agent enrolled · web-04</span><span>1h</span></div></div></section>
+
+<section class="screen" id="settings"><div class="grid">
+<div class="card"><h2>Organization</h2><div class="row">Company <b>ACME SYSTEMS</b></div><div class="row">Plan <b>Business</b></div></div>
+<div class="card"><h2>AI Autonomy</h2><div class="row">Mode <span class="pill">ASSIST</span></div><div class="row">Safe actions <span class="green">Allowed</span></div><div class="row">High-risk actions <span class="red">Approval</span></div></div>
+<div class="card"><h2>Notifications</h2><div class="row">Critical incidents <span class="green">ON</span></div><div class="row">AI actions <span class="green">ON</span></div></div>
+</div></section>
+
+<section class="screen" id="mobile"><div class="card" style="max-width:390px;margin:auto"><h2>Mobile Dashboard</h2><div class="card"><span class="muted">SYSTEM HEALTH</span><div class="value green">92</div></div><div class="card critical"><b>1 Critical Incident</b><p class="muted">Database01 disk 94%</p><button>VIEW INCIDENT</button></div><div class="card safe"><b>Action Awaiting Approval</b><p class="muted">Rotate binary logs on database01</p><button>REVIEW</button></div></div></section>
+
+<script>
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+ document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); document.getElementById(b.dataset.screen).classList.add('active');
+});
+</script>
+</body>
+</html>

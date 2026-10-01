@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUSOPS — AI IT Operations</title>
+<style>
+:root{
+  --bg:#050912;
+  --panel:#0b1220;
+  --panel2:#0e1727;
+  --line:#1b2b43;
+  --text:#e8f1ff;
+  --muted:#71839e;
+  --cyan:#19d9ff;
+  --blue:#3f7cff;
+  --purple:#8c5cff;
+  --green:#27e29b;
+  --yellow:#ffc857;
+  --red:#ff4d6d;
+  --orange:#ff8a3d;
+  --glow:0 0 24px rgba(25,217,255,.12);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 75% 10%,rgba(63,124,255,.10),transparent 28%),
+    radial-gradient(circle at 45% 70%,rgba(140,92,255,.07),transparent 30%),
+    linear-gradient(135deg,#040811,#07101c 45%,#050a13);
+  color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  overflow-x:hidden;
+}
+body:before{
+  content:"";
+  position:fixed; inset:0; pointer-events:none; opacity:.18;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:32px 32px;
+  mask-image:linear-gradient(to bottom,black,transparent 90%);
+}
+.app{display:flex;min-height:100vh}
+.sidebar{
+  width:245px;flex:0 0 245px;border-right:1px solid var(--line);
+  background:rgba(5,10,19,.84);backdrop-filter:blur(18px);
+  padding:22px 15px;position:sticky;top:0;height:100vh;
+}
+.brand{display:flex;align-items:center;gap:11px;padding:4px 10px 26px}
+.brand-mark{
+  width:34px;height:34px;border:1px solid rgba(25,217,255,.55);
+  border-radius:9px;display:grid;place-items:center;
+  color:var(--cyan);box-shadow:0 0 20px rgba(25,217,255,.18);
+  font-weight:900;
+}
+.brand b{font-size:17px;letter-spacing:2px}
+.brand small{display:block;color:var(--cyan);font-size:8px;letter-spacing:2px;margin-top:2px}
+.section-label{font-size:9px;color:#50627d;letter-spacing:1.6px;padding:14px 12px 7px;text-transform:uppercase}
+.nav{display:grid;gap:4px}
+.nav button{
+  border:1px solid transparent;background:transparent;color:#8da0bb;
+  width:100%;padding:11px 12px;border-radius:8px;text-align:left;
+  display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px;
+  transition:.18s;
+}
+.nav button:hover,.nav button.active{background:rgba(25,217,255,.07);border-color:rgba(25,217,255,.14);color:#e8f8ff}
+.nav button.active{box-shadow:inset 3px 0 0 var(--cyan)}
+.icon{width:18px;text-align:center;color:#5f7898;font-size:14px}
+.nav button.active .icon{color:var(--cyan)}
+.badge{margin-left:auto;font-size:9px;padding:3px 6px;border-radius:10px;background:rgba(255,77,109,.14);color:#ff7c94}
+.sidebar-bottom{position:absolute;left:15px;right:15px;bottom:18px;border-top:1px solid var(--line);padding-top:15px}
+.org{display:flex;align-items:center;gap:10px;padding:9px}
+.avatar{width:31px;height:31px;border-radius:8px;background:linear-gradient(135deg,#23436c,#16263f);display:grid;place-items:center;font-size:10px;color:#9fdfff}
+.org strong{font-size:11px}.org small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
+
+.main{flex:1;min-width:0}
+.topbar{
+  height:70px;border-bottom:1px solid var(--line);display:flex;align-items:center;
+  justify-content:space-between;padding:0 26px;background:rgba(5,10,19,.52);backdrop-filter:blur(15px);
+}
+.crumb{font-size:11px;color:#71839e}.crumb b{color:#dce9fa}
+.top-actions{display:flex;align-items:center;gap:9px}
+.top-btn{
+  border:1px solid var(--line);background:rgba(13,22,37,.8);color:#8da0bb;
+  border-radius:7px;height:32px;padding:0 10px;cursor:pointer;font-size:10px;
+}
+.top-btn:hover{border-color:#315273;color:white}
+.status-live{display:flex;align-items:center;gap:7px;font-size:9px;color:#6fe4bb;margin-right:8px}
+.dot{width:6px;height:6px;background:var(--green);border-radius:50%;box-shadow:0 0 10px var(--green)}
+.content{padding:24px 27px 35px;max-width:1700px;margin:auto}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px}
+h1{font-size:23px;margin:0 0 5px;letter-spacing:-.5px}
+.subtitle{font-size:11px;color:var(--muted)}
+.range{display:flex;gap:4px}
+.range button{background:transparent;border:1px solid var(--line);color:#72849e;padding:7px 10px;border-radius:5px;font-size:9px;cursor:pointer}
+.range button.active{background:rgba(25,217,255,.08);border-color:rgba(25,217,255,.35);color:var(--cyan)}
+
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:13px}
+.card{
+  background:linear-gradient(145deg,rgba(12,21,36,.94),rgba(8,15,27,.90));
+  border:1px solid var(--line);border-radius:10px;box-shadow:var(--glow);
+}
+.kpi{padding:15px 16px;position:relative;overflow:hidden}
+.kpi:after{content:"";position:absolute;width:70px;height:70px;border-radius:50%;right:-35px;top:-35px;background:rgba(25,217,255,.08);filter:blur(1px)}
+.kpi .label{font-size:9px;color:#687d99;text-transform:uppercase;letter-spacing:1px}
+.kpi .value{font-size:23px;font-weight:700;margin-top:7px}
+.kpi .trend{font-size:9px;margin-top:5px;color:#6f849f}
+.good{color:var(--green)}.warn{color:var(--yellow)}.bad{color:var(--red)}.cyan{color:var(--cyan)}
+.kpi.health .value{color:var(--green)}
+
+.grid-main{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(330px,.8fr);gap:13px}
+.panel{padding:15px 16px;min-width:0}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
+.panel-title{font-size:11px;font-weight:650;letter-spacing:.4px}
+.panel-sub{font-size:8px;color:#60748f}
+.link{color:var(--cyan);font-size:9px;cursor:pointer}
+.map{
+  height:300px;border-radius:7px;border:1px solid #172943;position:relative;overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 48%,rgba(25,217,255,.08),transparent 25%),
+    linear-gradient(rgba(25,217,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(25,217,255,.035) 1px,transparent 1px);
+  background-size:auto,30px 30px,30px 30px;
+}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.node{position:absolute;transform:translate(-50%,-50%);text-align:center;font-size:8px;color:#93a9c5}
+.node .circle{width:30px;height:30px;margin:auto;border-radius:50%;display:grid;place-items:center;background:#0b1728;border:1px solid #2b5477;box-shadow:0 0 16px rgba(25,217,255,.12)}
+.node.ok .circle{border-color:rgba(39,226,155,.55);color:var(--green)}
+.node.warn .circle{border-color:rgba(255,200,87,.7);color:var(--yellow)}
+.node.crit .circle{border-color:rgba(255,77,109,.75);color:var(--red);box-shadow:0 0 18px rgba(255,77,109,.18)}
+.ai{
+  border-color:rgba(140,92,255,.28);
+  background:linear-gradient(145deg,rgba(20,18,42,.95),rgba(9,16,29,.95));
+}
+.ai-head{display:flex;gap:10px;align-items:center}
+.ai-orb{width:31px;height:31px;border-radius:9px;display:grid;place-items:center;color:#c9b9ff;border:1px solid rgba(140,92,255,.5);box-shadow:0 0 18px rgba(140,92,255,.16)}
+.ai-title{font-size:11px}.ai-sub{font-size:8px;color:#7770a4;margin-top:2px}
+.ai-box{margin-top:13px;border:1px solid rgba(255,77,109,.23);background:rgba(255,77,109,.035);border-radius:8px;padding:12px}
+.incident-head{display:flex;justify-content:space-between;gap:10px}
+.incident-title{font-size:11px;font-weight:650}
+.pill{font-size:8px;padding:3px 6px;border-radius:20px;white-space:nowrap}
+.pill.critical{color:#ff8799;background:rgba(255,77,109,.11);border:1px solid rgba(255,77,109,.22)}
+.ai p{font-size:9px;line-height:1.6;color:#8ea0ba;margin:9px 0}
+.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+.ai-stat{background:rgba(255,255,255,.025);border:1px solid #1b2639;border-radius:6px;padding:8px}
+.ai-stat span{display:block;font-size:8px;color:#667992}.ai-stat b{font-size:10px;display:block;margin-top:3px}
+.ai-actions{display:flex;gap:7px;margin-top:10px}
+.btn{border:1px solid #253853;background:#0d192b;color:#9bb0ca;border-radius:5px;padding:7px 9px;font-size:8px;cursor:pointer}
+.btn.primary{border-color:rgba(25,217,255,.35);color:var(--cyan);background:rgba(25,217,255,.06)}
+.btn.danger{border-color:rgba(255,77,109,.35);color:#ff8297;background:rgba(255,77,109,.05)}
+
+.bottom-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:13px;margin-top:13px}
+.incidents{display:grid;gap:7px}
+.incident{display:grid;grid-template-columns:7px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid #17263c;background:rgba(9,16,28,.65);border-radius:7px}
+.incident .bar{width:3px;height:32px;border-radius:3px}.incident .bar.red{background:var(--red);box-shadow:0 0 9px rgba(255,77,109,.35)}.incident .bar.yellow{background:var(--yellow)}
+.incident strong{font-size:9px}.incident small{display:block;font-size:8px;color:#63758e;margin-top:3px}
+.time{font-size:8px;color:#61738d}
+
+.chart-wrap{height:145px;position:relative;border:1px solid #17263c;border-radius:7px;padding:9px;background:rgba(5,11,20,.45)}
+.chart-wrap svg{width:100%;height:100%}
+.legend{display:flex;gap:15px;margin-top:8px;font-size:8px;color:#71839d}.legend i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px}
+
+.server-panel{margin-top:13px}
+table{width:100%;border-collapse:collapse}
+th{font-size:8px;text-align:left;color:#5f738e;text-transform:uppercase;letter-spacing:.8px;padding:9px;border-bottom:1px solid #18283e}
+td{font-size:9px;padding:10px 9px;border-bottom:1px solid rgba(24,40,62,.7);color:#9db0c8}
+tr:hover td{background:rgba(25,217,255,.025)}
+.server-name{display:flex;align-items:center;gap:8px;color:#d8e5f5}.server-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 7px rgba(39,226,155,.5)}.server-dot.warn{background:var(--yellow)}.server-dot.red{background:var(--red)}
+.progress{height:4px;width:75px;background:#17263b;border-radius:4px;overflow:hidden}.progress span{display:block;height:100%;background:var(--cyan);border-radius:4px}.progress span.warn{background:var(--yellow)}.progress span.red{background:var(--red)}
+
+.activity{display:grid;gap:7px}
+.event{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:start;padding:7px 0;border-bottom:1px solid rgba(24,40,62,.65)}
+.event:last-child{border:0}
+.event-icon{width:23px;height:23px;border-radius:6px;background:#0d192a;border:1px solid #1e3048;display:grid;place-items:center;font-size:9px;color:var(--cyan)}
+.event strong{font-size:9px;font-weight:550}.event small{display:block;color:#647892;font-size:8px;margin-top:2px}.event time{font-size:7px;color:#526681}
+
+.toast{
+  position:fixed;right:22px;bottom:20px;padding:10px 13px;border:1px solid rgba(25,217,255,.25);
+  background:rgba(8,16,29,.95);backdrop-filter:blur(12px);border-radius:7px;font-size:9px;
+  color:#a8bdd5;transform:translateY(80px);opacity:0;transition:.3s;box-shadow:0 0 25px rgba(25,217,255,.08)
+}
+.toast.show{transform:translateY(0);opacity:1}
+
+@media(max-width:1200px){
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .grid-main,.bottom-grid{grid-template-columns:1fr}
+}
+@media(max-width:800px){
+  .sidebar{width:66px;flex-basis:66px;padding:18px 9px}.brand{padding:4px 4px 22px}.brand b,.brand small,.section-label,.nav button span,.badge,.org div{display:none}
+  .nav button{justify-content:center;padding:11px 0}.sidebar-bottom{left:8px;right:8px}.org{justify-content:center}
+  .content{padding:18px 13px}.topbar{padding:0 14px}.kpis{grid-template-columns:repeat(2,1fr)}.page-head{align-items:flex-start;gap:10px;flex-direction:column}
+}
+@media(max-width:500px){.kpis{grid-template-columns:1fr}.map{height:250px}.top-actions .top-btn:nth-child(2){display:none}table{min-width:680px}.server-panel{overflow:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">N</div>
+      <div><b>NEXUSOPS</b><small>AI OPERATIONS</small></div>
+    </div>
+    <div class="section-label">Monitor</div>
+    <nav class="nav">
+      <button class="active" onclick="activate(this)"><span class="icon">◈</span><span>Overview</span></button>
+      <button onclick="activate(this)"><span class="icon">▣</span><span>Servers</span></button>
+      <button onclick="activate(this)"><span class="icon">◉</span><span>Services</span></button>
+      <button onclick="activate(this)"><span class="icon">⚠</span><span>Incidents</span><span class="badge">3</span></button>
+      <button onclick="activate(this)"><span class="icon">⌁</span><span>Alerts</span></button>
+    </nav>
+    <div class="section-label">Intelligence</div>
+    <nav class="nav">
+      <button onclick="activate(this)"><span class="icon">✦</span><span>AI Assistant</span></button>
+      <button onclick="activate(this)"><span class="icon">↯</span><span>Actions</span></button>
+      <button onclick="activate(this)"><span class="icon">◫</span><span>Reports</span></button>
+    </nav>
+    <div class="section-label">Administration</div>
+    <nav class="nav">
+      <button onclick="activate(this)"><span class="icon">◎</span><span>Audit Log</span></button>
+      <button onclick="activate(this)"><span class="icon">⚙</span><span>Settings</span></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="org">
+        <div class="avatar">AS</div>
+        <div><strong>ACME SYSTEMS</strong><small>Production</small></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb">Workspace / <b>Infrastructure Overview</b></div>
+      <div class="top-actions">
+        <div class="status-live"><i class="dot"></i> LIVE MONITORING</div>
+        <button class="top-btn" onclick="toast('Search opened')">⌕ Search</button>
+        <button class="top-btn" onclick="toast('Notifications: 3 active incidents')">♢</button>
+        <button class="top-btn" onclick="toast('Profile menu')">TD</button>
+      </div>
+    </header>
+
+    <section class="content">
+      <div class="page-head">
+        <div><h1>Infrastructure Overview</h1><div class="subtitle">Real-time health and AI-powered operations intelligence</div></div>
+        <div class="range"><button>1H</button><button class="active">24H</button><button>7D</button><button>30D</button></div>
+      </div>
+
+      <div class="kpis">
+        <div class="card kpi health"><div class="label">System Health</div><div class="value">92<span style="font-size:12px">/100</span></div><div class="trend">↑ 4.2% from yesterday</div></div>
+        <div class="card kpi"><div class="label">Servers</div><div class="value">24</div><div class="trend"><span class="good">21 healthy</span> · <span class="warn">2 warning</span></div></div>
+        <div class="card kpi"><div class="label">Critical</div><div class="value bad">01</div><div class="trend">Requires attention</div></div>
+        <div class="card kpi"><div class="label">Services</div><div class="value">183</div><div class="trend"><span class="good">99.4% available</span></div></div>
+        <div class="card kpi"><div class="label">Uptime</div><div class="value cyan">99.97%</div><div class="trend">Last 30 days</div></div>
+        <div class="card kpi"><div class="label">AI Actions</div><div class="value">47</div><div class="trend"><span class="good">41 successful</span></div></div>
+      </div>
+
+      <div class="grid-main">
+        <div class="card panel">
+          <div class="panel-head"><div><div class="panel-title">Infrastructure Map</div><div class="panel-sub">Live topology · 24 nodes · 31 connections</div></div><div class="link">FULL TOPOLOGY →</div></div>
+          <div class="map">
+            <svg viewBox="0 0 800 300" preserveAspectRatio="none">
+              <g fill="none" stroke="#1a4564" stroke-width="1" opacity=".75">
+                <path d="M400 150 L150 65 L90 130 L180 225 L400 150 L620 72 L710 140 L620 235 L400 150"/>
+                <path d="M150 65 L400 40 L620 72 M180 225 L400 260 L620 235"/>
+                <path d="M90 130 L400 150 L710 140"/>
+              </g>
+              <g fill="none" stroke="#19d9ff" stroke-width="1.5" opacity=".32">
+                <path d="M400 150 L150 65"/><path d="M400 150 L620 72"/><path d="M400 150 L710 140"/>
+              </g>
+            </svg>
+            <div class="node ok" style="left:50%;top:50%"><div class="circle">◈</div>CORE</div>
+            <div class="node ok" style="left:19%;top:22%"><div class="circle">⇄</div>LOAD BALANCER</div>
+            <div class="node ok" style="left:77%;top:24%"><div class="circle">⇄</div>LOAD BALANCER</div>
+            <div class="node ok" style="left:11%;top:72%"><div class="circle">▣</div>WEB-01</div>
+            <div class="node ok" style="left:25%;top:78%"><div class="circle">▣</div>WEB-02</div>
+            <div class="node ok" style="left:75%;top:76%"><div class="circle">▣</div>APP-01</div>
+            <div class="node warn" style="left:88%;top:48%"><div class="circle">◇</div>DOCKER</div>
+            <div class="node crit" style="left:65%;top:53%"><div class="circle">DB</div>DATABASE01</div>
+            <div class="node ok" style="left:35%;top:43%"><div class="circle">DB</div>DATABASE02</div>
+          </div>
+        </div>
+
+        <div class="card panel ai">
+          <div class="panel-head">
+            <div class="ai-head"><div class="ai-orb">✦</div><div><div class="ai-title">AI Operations</div><div class="ai-sub">NEXUS INTELLIGENCE ENGINE · ACTIVE</div></div></div>
+            <span class="pill" style="color:#a996ff;background:rgba(140,92,255,.10);border:1px solid rgba(140,92,255,.2)">MONITOR</span>
+          </div>
+          <div class="ai-box">
+            <div class="incident-head"><div class="incident-title">Database01 disk usage reached 94%</div><span class="pill critical">CRITICAL</span></div>
+            <p>AI detected rapid binary-log growth over the last 3 hours. At the current rate, available storage may be exhausted in approximately <b style="color:#f2f6ff">7h 42m</b>.</p>
+            <div class="ai-grid">
+              <div class="ai-stat"><span>AI CONFIDENCE</span><b class="cyan">92%</b></div>
+              <div class="ai-stat"><span>LIKELY CAUSE</span><b>Binary log growth</b></div>
+              <div class="ai-stat"><span>IMPACT</span><b class="bad">High</b></div>
+              <div class="ai-stat"><span>RECOMMENDED</span><b>Archive logs</b></div>
+            </div>
+            <div class="ai-actions">
+              <button class="btn primary" onclick="toast('Action proposal opened')">VIEW AI ANALYSIS</button>
+              <button class="btn" onclick="toast('Safe remediation requires approval')">REVIEW ACTION</button>
+            </div>
+          </div>
+          <div style="margin-top:14px;font-size:8px;color:#667894">AI ACTIVITY</div>
+          <div class="activity" style="margin-top:5px">
+            <div class="event"><div class="event-icon">✓</div><div><strong>Restarted stalled worker service</strong><small>app-worker-03 · automated safe action</small></div><time>4m</time></div>
+            <div class="event"><div class="event-icon">⌁</div><div><strong>Detected memory leak pattern</strong><small>api-server-02 · confidence 87%</small></div><time>11m</time></div>
+            <div class="event"><div class="event-icon">◌</div><div><strong>Analyzed 183 services</strong><small>No additional anomalies found</small></div><time>18m</time></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-grid">
+        <div class="card panel">
+          <div class="panel-head"><div><div class="panel-title">Active Incidents</div><div class="panel-sub">3 incidents require attention</div></div><div class="link">VIEW ALL →</div></div>
+          <div class="incidents">
+            <div class="incident"><div class="bar red"></div><div><strong>Database01 disk usage at 94%</strong><small>Storage · Production · AI detected</small></div><div class="time">2m ago</div></div>
+            <div class="incident"><div class="bar yellow"></div><div><strong>API-02 memory above threshold</strong><small>Memory · Production · 86% used</small></div><div class="time">17m ago</div></div>
+            <div class="incident"><div class="bar yellow"></div><div><strong>Backup job exceeded normal duration</strong><small>Backup · Production · 2h 14m</small></div><div class="time">31m ago</div></div>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <div class="panel-head"><div><div class="panel-title">Resource Usage</div><div class="panel-sub">Aggregate infrastructure · last 24 hours</div></div></div>
+          <div class="chart-wrap">
+            <svg viewBox="0 0 600 130" preserveAspectRatio="none">
+              <g stroke="#17273c" stroke-width="1"><path d="M0 25H600M0 55H600M0 85H600M0 115H600"/></g>
+              <path d="M0 82 C40 75 55 85 85 68 S140 74 165 55 S210 63 235 48 S280 65 310 51 S350 47 380 58 S420 65 450 42 S500 50 530 36 S570 45 600 30 L600 130 L0 130Z" fill="rgba(25,217,255,.06)"/>
+              <path d="M0 82 C40 75 55 85 85 68 S140 74 165 55 S210 63 235 48 S280 65 310 51 S350 47 380 58 S420 65 450 42 S500 50 530 36 S570 45 600 30" fill="none" stroke="#19d9ff" stroke-width="2"/>
+              <path d="M0 102 C55 95 70 100 110 88 S170 95 205 80 S270 92 305 75 S350 83 390 78 S450 92 480 68 S550 80 600 63" fill="none" stroke="#8c5cff" stroke-width="1.7" opacity=".9"/>
+              <path d="M0 112 C45 108 80 115 125 104 S190 108 230 96 S290 103 330 93 S390 104 430 91 S500 97 550 84 S580 89 600 82" fill="none" stroke="#27e29b" stroke-width="1.4" opacity=".75"/>
+            </svg>
+          </div>
+          <div class="legend"><span><i style="background:#19d9ff"></i>CPU 58%</span><span><i style="background:#8c5cff"></i>Memory 64%</span><span><i style="background:#27e29b"></i>Network 31%</span></div>
+        </div>
+      </div>
+
+      <div class="card panel server-panel">
+        <div class="panel-head"><div><div class="panel-title">Server Fleet</div><div class="panel-sub">24 monitored hosts · agent version 1.8.2</div></div><div class="link">MANAGE SERVERS →</div></div>
+        <table>
+          <thead><tr><th>SERVER</th><th>STATUS</th><th>CPU</th><th>MEMORY</th><th>DISK</th><th>UPTIME</th><th>LAST SEEN</th></tr></thead>
+          <tbody>
+            <tr><td><div class="server-name"><i class="server-dot red"></i>database01</div></td><td class="bad">Critical</td><td>61%</td><td>72%</td><td><div class="progress"><span class="red" style="width:94%"></span></div></td><td>47d 12h</td><td>12 sec</td></tr>
+            <tr><td><div class="server-name"><i class="server-dot"></i>database02</div></td><td class="good">Healthy</td><td>43%</td><td>61%</td><td><div class="progress"><span style="width:67%"></span></div></td><td>82d 3h</td><td>8 sec</td></tr>
+            <tr><td><div class="server-name"><i class="server-dot warn"></i>api-server-02</div></td><td class="warn">Warning</td><td>74%</td><td>86%</td><td><div class="progress"><span class="warn" style="width:71%"></span></div></td><td>31d 19h</td><td>5 sec</td></tr>
+            <tr><td><div class="server-name"><i class="server-dot"></i>web-01</div></td><td class="good">Healthy</td><td>29%</td><td>48%</td><td><div class="progress"><span style="width:53%"></span></div></td><td>112d 8h</td><td>4 sec</td></tr>
+            <tr><td><div class="server-name"><i class="server-dot"></i>app-worker-03</div></td><td class="good">Healthy</td><td>37%</td><td>55%</td><td><div class="progress"><span style="width:42%"></span></div></td><td>64d 1h</td><td>7 sec</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card panel" style="margin-top:13px">
+        <div class="panel-head"><div><div class="panel-title">Live Activity</div><div class="panel-sub">Latest infrastructure and AI events</div></div><div class="status-live"><i class="dot"></i> STREAMING</div></div>
+        <div class="activity" id="liveActivity">
+          <div class="event"><div class="event-icon">✦</div><div><strong>AI analysis completed</strong><small>Database01 · disk growth pattern identified</small></div><time>just now</time></div>
+          <div class="event"><div class="event-icon">✓</div><div><strong>Agent heartbeat received</strong><small>web-01 · CPU 29% · memory 48%</small></div><time>12 sec</time></div>
+          <div class="event"><div class="event-icon">↻</div><div><strong>Service health check passed</strong><small>api-gateway · response 84ms</small></div><time>28 sec</time></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+function activate(el){
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  toast(el.innerText.trim()+' selected');
+}
+let toastTimer;
+function toast(message){
+  const el=document.getElementById('toast');
+  el.textContent=message;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
+}
+setInterval(()=>{
+  const cpu=document.querySelector('.kpi.health .value');
+  const base=92+Math.round(Math.sin(Date.now()/7000)*2);
+  cpu.innerHTML=base+'<span style="font-size:12px">/100</span>';
+},3000);
+</script>
+</body>
+</html>

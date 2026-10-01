@@ -1,0 +1,12 @@
+FROM golang:1.22-alpine AS build
+WORKDIR /app
+COPY agent/go.mod ./
+RUN go mod download || true
+COPY agent/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o nexusops-agent main.go
+
+FROM alpine:3.19
+RUN apk add --no-cache ca-certificates tzdata procps
+WORKDIR /app
+COPY --from=build /app/nexusops-agent /usr/local/bin/nexusops-agent
+CMD ["nexusops-agent"]

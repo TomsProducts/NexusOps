@@ -1,0 +1,48 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: nexusops-backend
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/nexusops}
+    username: ${SPRING_DATASOURCE_USERNAME:nexusops}
+    password: ${SPRING_DATASOURCE_PASSWORD:nexusops_dev_secret_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+nexusops:
+  jwt:
+    secret: ${NEXUSOPS_JWT_SECRET:c3VwZXJfc2VjcmV0X2tleV9mb3JfbmV4dXNvcHNfbXZwXzIwMjZfZGVwbG95bWVudCEhIQ==}
+    expiration-ms: 86400000 # 24 hours
+    refresh-expiration-ms: 604800000 # 7 days
+  ai:
+    provider: ${NEXUSOPS_AI_PROVIDER:9ROUTER} # 9ROUTER, MOCK, OPENAI
+    base-url: ${NEXUSOPS_AI_BASE_URL:http://192.168.68.117:20128/v1}
+    api-key: ${NEXUSOPS_AI_API_KEY:sk-d4561a4c0bccdb42-oubwfa-e4ea86bf}
+    model: ${NEXUSOPS_AI_MODEL:ag/gemini-3.8-flash}
+
+logging:
+  level:
+    root: INFO
+    com.nexusops: DEBUG
+    org.springframework.security: INFO

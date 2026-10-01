@@ -1,0 +1,22 @@
+[Unit]
+Description=NexusOps Infrastructure Agent
+Documentation=https://nexusops.io/docs/agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/nexusops-agent
+Restart=always
+RestartSec=5
+KillMode=process
+LimitNOFILE=65535
+
+# Security hardening
+ProtectSystem=full
+ProtectHome=read-only
+NoNewPrivileges=false
+
+[Install]
+WantedBy=multi-user.target

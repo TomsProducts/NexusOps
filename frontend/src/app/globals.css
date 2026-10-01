@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #050912;
+  --panel: #0b1220;
+  --panel2: #0e1727;
+  --line: #1b2b43;
+  --text: #e8f1ff;
+  --muted: #71839e;
+  --cyan: #19d9ff;
+  --blue: #3f7cff;
+  --purple: #8c5cff;
+  --green: #27e29b;
+  --yellow: #ffc857;
+  --red: #ff4d6d;
+  --orange: #ff8a3d;
+  --glow: 0 0 24px rgba(25, 217, 255, 0.12);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 75% 10%, rgba(63, 124, 255, 0.10), transparent 28%),
+    radial-gradient(circle at 45% 70%, rgba(140, 92, 255, 0.07), transparent 30%),
+    linear-gradient(135deg, #040811, #07101c 45%, #050a13);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 90%);
+}
+
+.card-glass {
+  background: linear-gradient(145deg, rgba(12, 21, 36, 0.94), rgba(8, 15, 27, 0.90));
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--glow);
+}
+
+.dot-pulse {
+  box-shadow: 0 0 10px #27e29b;
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.15); }
+}
