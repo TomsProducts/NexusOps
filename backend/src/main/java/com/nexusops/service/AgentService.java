@@ -179,6 +179,9 @@ public class AgentService {
             if (req.getCriticalLogs() != null && !req.getCriticalLogs().isBlank()) {
                 server.setCriticalLogs(req.getCriticalLogs());
             }
+            if (req.getServicePlugins() != null && !req.getServicePlugins().isBlank()) {
+                server.setServicePlugins(req.getServicePlugins());
+            }
             serverRepository.save(server);
         }
 

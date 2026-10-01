@@ -59,6 +59,9 @@ public class Server {
     @Column(name = "critical_logs", columnDefinition = "TEXT")
     private String criticalLogs;
 
+    @Column(name = "service_plugins", columnDefinition = "TEXT")
+    private String servicePlugins;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

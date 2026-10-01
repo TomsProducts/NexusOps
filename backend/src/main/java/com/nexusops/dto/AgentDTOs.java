@@ -104,6 +104,9 @@ public class AgentDTOs {
 
         @JsonProperty("critical_logs")
         private String criticalLogs;
+
+        @JsonProperty("service_plugins")
+        private String servicePlugins;
     }
 
     @Data

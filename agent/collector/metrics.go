@@ -26,6 +26,7 @@ type SystemMetrics struct {
 	DockerContainers string    `json:"docker_containers,omitempty"`
 	TopProcesses     string    `json:"top_processes,omitempty"`
 	CriticalLogs     string    `json:"critical_logs,omitempty"`
+	ServicePlugins   string    `json:"service_plugins,omitempty"`
 }
 
 type Collector struct {
@@ -51,7 +52,7 @@ func (c *Collector) Collect() (*SystemMetrics, error) {
 
 	// Collect Docker containers (if docker daemon available)
 	dockerClient := NewDockerClient()
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	containers, err := dockerClient.ListContainers(ctx)
 	cancel()
 	if err == nil {
@@ -72,6 +73,12 @@ func (c *Collector) Collect() (*SystemMetrics, error) {
 		if raw, err := json.Marshal(logs); err == nil {
 			m.CriticalLogs = string(raw)
 		}
+	}
+
+	// Collect Service & Database Plugins (Redis, Postgres, Ports, Mounts/Inodes, Systemd, SSL)
+	plugins := CollectServicePlugins()
+	if raw, err := json.Marshal(plugins); err == nil {
+		m.ServicePlugins = string(raw)
 	}
 
 	return m, nil

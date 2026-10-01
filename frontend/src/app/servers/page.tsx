@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Topbar from "@/components/Topbar";
 import { fetchServers, fetchContainerLogs, restartDockerContainer } from "@/lib/api";
-import { Server, DockerContainerInfo, ProcessInfo, SystemLogEntry } from "@/lib/types";
+import { Server, DockerContainerInfo, ProcessInfo, SystemLogEntry, ServicePluginsPayload } from "@/lib/types";
 import {
   Copy,
   Check,
@@ -21,13 +21,19 @@ import {
   Server as ServerIcon,
   Play,
   CheckCircle2,
-  HardDrive
+  HardDrive,
+  Database,
+  Network,
+  ShieldCheck,
+  Layers,
+  Clock,
+  ArrowUpRight
 } from "lucide-react";
 
 export default function ServersPage() {
   const [servers, setServers] = useState<Server[]>([]);
   const [selectedServer, setSelectedServer] = useState<Server | null>(null);
-  const [activeTab, setActiveTab] = useState<"docker" | "processes" | "logs">("docker");
+  const [activeTab, setActiveTab] = useState<"docker" | "services" | "processes" | "logs">("docker");
   
   // Search & filter states
   const [dockerSearch, setDockerSearch] = useState("");
@@ -90,6 +96,15 @@ export default function ServersPage() {
       return [];
     }
   }, [selectedServer?.criticalLogs]);
+
+  const parsedServices: ServicePluginsPayload | null = useMemo(() => {
+    if (!selectedServer?.servicePlugins) return null;
+    try {
+      return JSON.parse(selectedServer.servicePlugins);
+    } catch {
+      return null;
+    }
+  }, [selectedServer?.servicePlugins]);
 
   // Filtered views
   const filteredContainers = useMemo(() => {
@@ -391,6 +406,17 @@ export default function ServersPage() {
                   Docker Containers ({parsedContainers.length})
                 </button>
                 <button
+                  onClick={() => setActiveTab("services")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeTab === "services"
+                      ? "bg-cyberCyan text-black shadow-[0_0_10px_rgba(25,217,255,0.3)]"
+                      : "text-[#71839e] hover:text-[#e8f1ff]"
+                  }`}
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  Services & Plugins
+                </button>
+                <button
                   onClick={() => setActiveTab("processes")}
                   className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeTab === "processes"
@@ -457,6 +483,8 @@ export default function ServersPage() {
                         <tr className="border-b border-lineDark text-[#71839e] uppercase text-[10px] tracking-wider">
                           <th className="py-2.5 px-3">Container Name</th>
                           <th className="py-2.5 px-3">Status</th>
+                          <th className="py-2.5 px-3">CPU %</th>
+                          <th className="py-2.5 px-3">Memory</th>
                           <th className="py-2.5 px-3">Image</th>
                           <th className="py-2.5 px-3">Ports</th>
                           <th className="py-2.5 px-3 text-right">Actions</th>
@@ -470,6 +498,9 @@ export default function ServersPage() {
                             .filter((p) => p.PublicPort)
                             .map((p) => `${p.PublicPort}:${p.PrivatePort}`)
                             .join(", ");
+                          const cpu = c.cpu_percent ?? c.cpuPercent ?? 0;
+                          const memMB = c.memory_usage_mb ?? c.memoryUsageMb ?? 0;
+                          const memPct = c.memory_percent ?? c.memoryPercent ?? 0;
 
                           return (
                             <tr key={c.id} className="hover:bg-white/[0.02] transition-colors">
@@ -493,6 +524,51 @@ export default function ServersPage() {
                                 >
                                   {c.status || c.state}
                                 </span>
+                              </td>
+                              <td className="py-3 px-3">
+                                {isRunning ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-14 h-1.5 bg-[#0b182d] rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${
+                                          cpu > 80 ? "bg-cyberRed" : cpu > 40 ? "bg-cyberYellow" : "bg-cyberCyan"
+                                        }`}
+                                        style={{ width: `${Math.min(100, Math.max(2, cpu))}%` }}
+                                      />
+                                    </div>
+                                    <span
+                                      className={`text-[11px] font-mono font-bold ${
+                                        cpu > 80 ? "text-cyberRed" : cpu > 40 ? "text-cyberYellow" : "text-[#e8f1ff]"
+                                      }`}
+                                    >
+                                      {cpu.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-[#516480] text-[11px]">-</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-3">
+                                {isRunning && (memMB > 0 || memPct > 0) ? (
+                                  <div>
+                                    <div className="flex items-center justify-between text-[11px] font-mono mb-1">
+                                      <span className="text-[#e8f1ff] font-semibold">
+                                        {memMB >= 1024 ? `${(memMB / 1024).toFixed(2)} GB` : `${memMB.toFixed(1)} MB`}
+                                      </span>
+                                      <span className="text-[#71839e] text-[10px] ml-1.5">({memPct.toFixed(1)}%)</span>
+                                    </div>
+                                    <div className="w-20 h-1.5 bg-[#0b182d] rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${
+                                          memPct > 85 ? "bg-cyberRed" : memPct > 65 ? "bg-cyberYellow" : "bg-cyberGreen"
+                                        }`}
+                                        style={{ width: `${Math.min(100, Math.max(2, memPct))}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-[#516480] text-[11px]">-</span>
+                                )}
                               </td>
                               <td className="py-3 px-3 text-[#a4b8d1] font-mono text-[11px] truncate max-w-xs">
                                 {c.image}
@@ -527,6 +603,323 @@ export default function ServersPage() {
                     </table>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* TAB: SERVICES & INFRASTRUCTURE */}
+            {activeTab === "services" && (
+              <div className="space-y-6">
+                {/* Core DB & Cache Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Redis Card */}
+                  <div className="card-glass p-5 border-lineDark flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between pb-3 border-b border-lineDark">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 rounded-lg bg-cyberRed/10 border border-cyberRed/30 text-cyberRed">
+                            <Database className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h3 className="text-xs font-bold text-[#e8f1ff]">Redis In-Memory Engine</h3>
+                            <p className="text-[10px] text-[#71839e]">Port 6379 · Cache & Key-Value</p>
+                          </div>
+                        </div>
+                        {parsedServices?.redis?.available ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-cyberGreen/10 text-cyberGreen border border-cyberGreen/20 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyberGreen shadow-[0_0_6px_rgba(0,255,163,0.8)]" />
+                            ONLINE ({parsedServices.redis.latency_ms?.toFixed(2)} ms)
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-[#20334d]/40 text-[#71839e]">
+                            INACTIVE
+                          </span>
+                        )}
+                      </div>
+
+                      {parsedServices?.redis?.available ? (
+                        <div className="grid grid-cols-3 gap-3 pt-4">
+                          <div className="bg-[#040810] p-2.5 rounded-lg border border-lineDark/60">
+                            <span className="text-[10px] text-[#71839e] block">Memory Used</span>
+                            <span className="text-xs font-mono font-bold text-cyberCyan">
+                              {parsedServices.redis.memory_human || "N/A"}
+                            </span>
+                          </div>
+                          <div className="bg-[#040810] p-2.5 rounded-lg border border-lineDark/60">
+                            <span className="text-[10px] text-[#71839e] block">Connected Clients</span>
+                            <span className="text-xs font-mono font-bold text-[#e8f1ff]">
+                              {parsedServices.redis.connected_clients ?? 0}
+                            </span>
+                          </div>
+                          <div className="bg-[#040810] p-2.5 rounded-lg border border-lineDark/60">
+                            <span className="text-[10px] text-[#71839e] block">Throughput</span>
+                            <span className="text-xs font-mono font-bold text-cyberGreen">
+                              {parsedServices.redis.ops_per_sec ?? 0} <span className="text-[10px] font-normal text-[#71839e]">ops/s</span>
+                            </span>
+                          </div>
+                          <div className="bg-[#040810] p-2.5 rounded-lg border border-lineDark/60">
+                            <span className="text-[10px] text-[#71839e] block">Hit Rate</span>
+                            <span className="text-xs font-mono font-bold text-[#e8f1ff]">
+                              {parsedServices.redis.hit_rate ? `${parsedServices.redis.hit_rate}%` : "100%"}
+                            </span>
+                          </div>
+                          <div className="bg-[#040810] p-2.5 rounded-lg border border-lineDark/60">
+                            <span className="text-[10px] text-[#71839e] block">Uptime</span>
+                            <span className="text-xs font-mono font-bold text-[#a4b8d1]">
+                              {parsedServices.redis.uptime_days ?? 0} days
+                            </span>
+                          </div>
+                          <div className="bg-[#040810] p-2.5 rounded-lg border border-lineDark/60">
+                            <span className="text-[10px] text-[#71839e] block">Engine Version</span>
+                            <span className="text-xs font-mono text-[#a4b8d1] truncate block">
+                              v{parsedServices.redis.version || "7.x"}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[#71839e] pt-4">
+                          Redis daemon not detected or no port 6379 binding found on this host.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Postgres Card */}
+                  <div className="card-glass p-5 border-lineDark flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between pb-3 border-b border-lineDark">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 rounded-lg bg-cyberCyan/10 border border-cyberCyan/30 text-cyberCyan">
+                            <Database className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h3 className="text-xs font-bold text-[#e8f1ff]">PostgreSQL Database</h3>
+                            <p className="text-[10px] text-[#71839e]">Port 5432 · ACID Relational DB</p>
+                          </div>
+                        </div>
+                        {parsedServices?.postgres?.available ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-cyberGreen/10 text-cyberGreen border border-cyberGreen/20 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyberGreen shadow-[0_0_6px_rgba(0,255,163,0.8)]" />
+                            ONLINE ({parsedServices.postgres.latency_ms?.toFixed(2)} ms)
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-[#20334d]/40 text-[#71839e]">
+                            INACTIVE
+                          </span>
+                        )}
+                      </div>
+
+                      {parsedServices?.postgres?.available ? (
+                        <div className="grid grid-cols-2 gap-3 pt-4">
+                          <div className="bg-[#040810] p-2.5 rounded-lg border border-lineDark/60">
+                            <span className="text-[10px] text-[#71839e] block">Active Connections</span>
+                            <span className="text-xs font-mono font-bold text-cyberCyan">
+                              {parsedServices.postgres.active_connections !== undefined && parsedServices.postgres.active_connections > 0
+                                ? parsedServices.postgres.active_connections
+                                : "Healthy"}
+                            </span>
+                          </div>
+                          <div className="bg-[#040810] p-2.5 rounded-lg border border-lineDark/60">
+                            <span className="text-[10px] text-[#71839e] block">Handshake Latency</span>
+                            <span className="text-xs font-mono font-bold text-cyberGreen">
+                              {parsedServices.postgres.latency_ms?.toFixed(2)} ms
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[#71839e] pt-4">
+                          PostgreSQL service socket not active on port 5432.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: TCP Port Prober Matrix */}
+                <div className="card-glass p-5 border-lineDark space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Network className="w-4 h-4 text-cyberCyan" />
+                      <h3 className="text-xs font-bold text-[#e8f1ff]">Local Port Prober & Latency Matrix</h3>
+                    </div>
+                    <span className="text-[10px] text-[#71839e]">Active TCP Handshake Probes</span>
+                  </div>
+
+                  {parsedServices?.ports && parsedServices.ports.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                      {parsedServices.ports.map((p) => (
+                        <div
+                          key={p.port}
+                          className={`p-2.5 rounded-lg border text-xs transition-all ${
+                            p.open
+                              ? "bg-[#040b17] border-cyberCyan/30 hover:border-cyberCyan/60"
+                              : "bg-[#060a12] border-lineDark/40 opacity-60"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-mono font-bold text-[#e8f1ff]">:{p.port}</span>
+                            <span
+                              className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                                p.open
+                                  ? "bg-cyberGreen/10 text-cyberGreen border border-cyberGreen/30"
+                                  : "bg-[#182333] text-[#71839e]"
+                              }`}
+                            >
+                              {p.open ? `${p.latency_ms}ms` : "CLOSED"}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-[#71839e] truncate block">{p.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[#71839e]">No port telemetry available.</p>
+                  )}
+                </div>
+
+                {/* Section 3: Mounts and Inodes */}
+                <div className="card-glass p-5 border-lineDark space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <HardDrive className="w-4 h-4 text-cyberYellow" />
+                      <h3 className="text-xs font-bold text-[#e8f1ff]">Filesystems & Inodes Health</h3>
+                    </div>
+                    <span className="text-[10px] text-[#71839e]">Physical Mounts & Inodes Capacity</span>
+                  </div>
+
+                  {parsedServices?.mounts && parsedServices.mounts.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-lineDark text-[#71839e] uppercase text-[10px] tracking-wider">
+                            <th className="py-2 px-3">Mount Point</th>
+                            <th className="py-2 px-3">FS Type</th>
+                            <th className="py-2 px-3">Disk Usage</th>
+                            <th className="py-2 px-3">Space Used</th>
+                            <th className="py-2 px-3">Inodes Used</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-lineDark/40">
+                          {parsedServices.mounts.map((m, idx) => (
+                            <tr key={idx} className="hover:bg-white/[0.02]">
+                              <td className="py-2.5 px-3 font-mono font-bold text-cyberCyan">{m.mount}</td>
+                              <td className="py-2.5 px-3 font-mono text-[#71839e] text-[11px]">{m.fs_type}</td>
+                              <td className="py-2.5 px-3">
+                                <div className="flex items-center gap-2 w-36">
+                                  <div className="flex-1 h-1.5 bg-[#0b182d] rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full ${
+                                        m.percent > 85 ? "bg-cyberRed" : m.percent > 65 ? "bg-cyberYellow" : "bg-cyberGreen"
+                                      }`}
+                                      style={{ width: `${Math.min(100, Math.max(2, m.percent))}%` }}
+                                    />
+                                  </div>
+                                  <span className="font-mono text-[11px] font-bold text-[#e8f1ff]">{m.percent}%</span>
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-3 font-mono text-[#a4b8d1]">
+                                {m.used_gb} GB / {m.total_gb} GB
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <span
+                                  className={`text-[11px] font-mono px-2 py-0.5 rounded ${
+                                    m.inodes_percent > 80
+                                      ? "bg-cyberRed/10 text-cyberRed border border-cyberRed/30"
+                                      : "text-[#a4b8d1]"
+                                  }`}
+                                >
+                                  {m.inodes_percent}%
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[#71839e]">No filesystem telemetry available.</p>
+                  )}
+                </div>
+
+                {/* Section 4: Systemd Failed Units & SSL Certificates */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Systemd Failed Units */}
+                  <div className="card-glass p-5 border-lineDark space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-cyberGreen" />
+                        <h3 className="text-xs font-bold text-[#e8f1ff]">Systemd Service Daemon Health</h3>
+                      </div>
+                    </div>
+
+                    {!parsedServices?.failed_systemd || parsedServices.failed_systemd.length === 0 ? (
+                      <div className="flex items-center gap-3 p-3 bg-cyberGreen/5 border border-cyberGreen/20 rounded-lg text-xs text-cyberGreen">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span>All host systemd units are operational (0 failed units).</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] text-cyberRed font-bold flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          {parsedServices.failed_systemd.length} degraded systemd unit(s) detected:
+                        </div>
+                        <div className="space-y-1">
+                          {parsedServices.failed_systemd.map((u, i) => (
+                            <div
+                              key={i}
+                              className="px-2.5 py-1 rounded bg-cyberRed/10 border border-cyberRed/30 font-mono text-[11px] text-cyberRed"
+                            >
+                              {u}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* SSL Certificates */}
+                  <div className="card-glass p-5 border-lineDark space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-cyberCyan" />
+                        <h3 className="text-xs font-bold text-[#e8f1ff]">SSL / TLS Certificates</h3>
+                      </div>
+                      <span className="text-[10px] text-[#71839e]">Port 443 Handshake</span>
+                    </div>
+
+                    {!parsedServices?.ssl_certs || parsedServices.ssl_certs.length === 0 ? (
+                      <p className="text-xs text-[#71839e] p-3 bg-[#040810] rounded-lg border border-lineDark/60">
+                        No active TLS service bound to port 443 on this host.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {parsedServices.ssl_certs.map((c, i) => (
+                          <div
+                            key={i}
+                            className="p-3 bg-[#040810] border border-lineDark/60 rounded-lg flex items-center justify-between"
+                          >
+                            <div>
+                              <span className="font-mono text-xs font-bold text-[#e8f1ff] block">
+                                {c.domain || "Localhost Certificate"}
+                              </span>
+                              <span className="text-[10px] text-[#71839e]">Issuer: {c.issuer || "Self-signed / CA"}</span>
+                            </div>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
+                                c.days_remaining > 30
+                                  ? "bg-cyberGreen/10 text-cyberGreen border border-cyberGreen/30"
+                                  : c.days_remaining > 0
+                                  ? "bg-cyberYellow/10 text-cyberYellow border border-cyberYellow/30"
+                                  : "bg-cyberRed/10 text-cyberRed border border-cyberRed/30"
+                              }`}
+                            >
+                              {c.days_remaining > 0 ? `${c.days_remaining} days remaining` : "EXPIRED"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

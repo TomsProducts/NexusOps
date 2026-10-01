@@ -6,12 +6,70 @@ export interface DockerContainerInfo {
   state: string;
   status: string;
   created: number;
+  cpu_percent?: number;
+  cpuPercent?: number;
+  memory_usage_mb?: number;
+  memoryUsageMb?: number;
+  memory_limit_mb?: number;
+  memoryLimitMb?: number;
+  memory_percent?: number;
+  memoryPercent?: number;
   ports?: Array<{
     IP?: string;
     PrivatePort: number;
     PublicPort?: number;
     Type: string;
   }>;
+}
+
+export interface RedisHealth {
+  available: boolean;
+  latency_ms?: number;
+  version?: string;
+  memory_human?: string;
+  connected_clients?: number;
+  ops_per_sec?: number;
+  uptime_days?: number;
+  hit_rate?: number;
+}
+
+export interface PostgresHealth {
+  available: boolean;
+  latency_ms?: number;
+  active_connections?: number;
+  version?: string;
+}
+
+export interface PortProbe {
+  port: number;
+  name: string;
+  open: boolean;
+  latency_ms: number;
+}
+
+export interface DiskMountInfo {
+  mount: string;
+  fs_type: string;
+  total_gb: number;
+  used_gb: number;
+  percent: number;
+  inodes_percent: number;
+}
+
+export interface SSLCertInfo {
+  domain: string;
+  valid: boolean;
+  days_remaining: number;
+  issuer: string;
+}
+
+export interface ServicePluginsPayload {
+  redis?: RedisHealth;
+  postgres?: PostgresHealth;
+  ports?: PortProbe[];
+  mounts?: DiskMountInfo[];
+  failed_systemd?: string[];
+  ssl_certs?: SSLCertInfo[];
 }
 
 export interface ProcessInfo {
@@ -49,6 +107,7 @@ export interface Server {
   dockerContainers?: string;
   topProcesses?: string;
   criticalLogs?: string;
+  servicePlugins?: string;
 }
 
 export interface MetricPoint {

@@ -147,6 +147,7 @@ public class ServerService {
                 .dockerContainers(s.getDockerContainers())
                 .topProcesses(s.getTopProcesses())
                 .criticalLogs(s.getCriticalLogs())
+                .servicePlugins(s.getServicePlugins())
                 .build();
     }
 }

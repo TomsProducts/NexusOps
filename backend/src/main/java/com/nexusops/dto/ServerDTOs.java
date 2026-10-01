@@ -32,6 +32,7 @@ public class ServerDTOs {
         private String dockerContainers;
         private String topProcesses;
         private String criticalLogs;
+        private String servicePlugins;
     }
 
     @Data
