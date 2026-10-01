@@ -7,7 +7,17 @@
 ![Docker](https://img.shields.io/badge/Containers-Docker%20UNIX%20Socket-2496ED?style=flat-square&logo=docker)
 ![AI](https://img.shields.io/badge/AI%20Engine-9Router%20%7C%20Gemini%20Flash-FF6F00?style=flat-square)
 
-NexusOps is a high-performance, real-time infrastructure observability and autonomous remediation platform built for bare-metal, virtualized, and edge environments. It combines lightweight, cross-platform telemetry agents with a reactive control plane, automated diagnostic runbooks, live container management, and LLM-assisted incident analysis via 9Router.
+NexusOps is a high-performance, real-time infrastructure observability and autonomous remediation platform built for bare-metal, virtualized, and edge environments. It combines lightweight, cross-platform telemetry agents with a reactive control plane, automated diagnostic runbooks, live container management, service health plugins, and LLM-assisted incident analysis via 9Router.
+
+---
+
+## Live Fleet Topology
+
+| Server Name | Hostname | IP Address | OS / Architecture | Monitored Services & Workloads |
+| :--- | :--- | :--- | :--- | :--- |
+| **`DeployCasaServer`** | `casa` | `192.168.68.117` | Ubuntu 24.04 (x86_64) | Control Plane (Next.js, Spring Boot, Postgres 16, Redis 7, 9Router, Heimdall, Gitea). 43 containers with live CPU/RAM stats. |
+| **`Desktop`** | `ServerNUC` | `192.168.68.108` | Linux Mint 22 (x86_64) | Workstation Node. Daemonized via systemd (`nexusops-agent.service`). Monitored mounts, open ports, systemd health. |
+| **`rasberry1`** | `raspberrypi` | `192.168.68.122` | Debian 12 (ARMv7 32-bit) | Edge Gateway. Pi-hole DNS (:53), Tailscale router, Portainer Agent, 1.5 GB expanded swap. |
 
 ---
 
@@ -34,12 +44,12 @@ NexusOps is a high-performance, real-time infrastructure observability and auton
       │  PostgreSQL 16   │            │     Redis 7      │              │   9Router Core   │              │   Edge Agents    │
       │ Telemetry/Audit  │            │ Pub/Sub & Cache  │              │    Port: 20128   │              │  Go v1.8.2 (poll)│
       └──────────────────┘            └──────────────────┘              └──────────────────┘              └────────┬─────────┘
-                                                                                                                   │
-                             ┌─────────────────────────────────────┬───────────────────────────────────────────────┘
+                                                                                                                    │
+                             ┌─────────────────────────────────────┬────────────────────────────────────────────────┘
                              ▼                                     ▼
                   ┌──────────────────────┐              ┌──────────────────────┐
                   │ x86_64 Linux Agent   │              │  ARMv7 Edge Agent    │
-                  │ Ubuntu / Rocky Linux │              │  Raspberry Pi OS     │
+                  │ Ubuntu / Mint Linux  │              │  Raspberry Pi OS     │
                   │ Docker Socket + Logs │              │  Tailscale + Pi-hole │
                   └──────────────────────┘              └──────────────────────┘
 ```
@@ -52,7 +62,8 @@ NexusOps is a high-performance, real-time infrastructure observability and auton
 ├── agent/                       # Lightweight Go daemon (<15MB RAM footprint)
 │   ├── client/                  # HTTP API client with auth & token rotation
 │   ├── collector/               # System metrics, /var/run/docker.sock, ps, journalctl
-│   │   ├── docker.go            # Direct Docker UNIX socket API client
+│   │   ├── docker.go            # Docker UNIX socket client with per-container CPU & RAM stats
+│   │   ├── services.go          # Database & service plugins (Redis, Postgres, Ports, Mounts, Inodes, Systemd, SSL)
 │   │   ├── processes.go         # ps -eo table parser and sorter
 │   │   ├── syslogs.go           # journalctl -p err..emerg error stream
 │   │   └── metrics.go           # CPU, memory, disk, network, load avg
@@ -73,7 +84,7 @@ NexusOps is a high-performance, real-time infrastructure observability and auton
 ├── frontend/                    # Futuristic glassmorphism web console
 │   ├── src/app/
 │   │   ├── dashboard/           # Live topology grid, system health score, activity feeds
-│   │   ├── servers/             # Fleet grid, Docker container inspector, process tree, system logs
+│   │   ├── servers/             # Fleet grid, Docker containers (CPU/RAM), Services & Plugins, Process tree, Logs
 │   │   ├── actions/             # Policy-controlled remediation queue & runbook dispatcher
 │   │   ├── ai/                  # Real-time incident troubleshooting via 9Router
 │   │   ├── incidents/           # Incident tracking, severity triage, root-cause analysis
@@ -92,90 +103,63 @@ NexusOps is a high-performance, real-time infrastructure observability and auton
 
 ---
 
-## Key Features
+## Core Capabilities
 
-### 1. Docker Runtime Inspection & Remote Terminal Logs
-- Directly interfaces with `/var/run/docker.sock` over a raw UNIX domain socket without invoking the `docker` CLI binary.
-- Decodes Docker's 8-byte multiplexed stdout/stderr frame headers to deliver clean terminal output.
-- Real-time container inventory (ID, names, images, uptime, port maps).
-- One-click live log streaming modal with search, line numbers, and clipboard copy.
-- On-demand container restart with agent verification.
+### 1. Docker Runtime Inspection & Real-time Resource Usage
+- **Direct UNIX Domain Socket**: Communicates directly with `/var/run/docker.sock` without shell overhead or dependency on the Docker CLI.
+- **Per-Container CPU %**: Computed across container CPU counter deltas and system counter deltas multiplied by online CPU cores.
+- **Per-Container Memory & Inactive File Deduction**: Accurately computes non-reclaimable RAM usage in MB/GB and percentage capacity, correctly accounting for cgroups v1 (`cache`) and cgroups v2 (`inactive_file`).
+- **Demultiplexed Log Streaming**: Demultiplexes Docker's 8-byte multiplexed stdout/stderr frame headers to deliver clean terminal logs with line search and copy.
+- **Controlled Container Restarts**: Safe, authenticated restart actions dispatched directly through the agent action queue.
 
-### 2. Live Process Tree & Resource Analysis
+### 2. Database & Infrastructure Plugins
+- **Redis Health Engine**: Probes port 6379, executes raw `INFO`, parses response latency (<0.3 ms), memory consumed, connected clients, operations per second, cache hit rate, and uptime.
+- **PostgreSQL Diagnostics**: Probes port 5432 handshake latency (<1 ms) and samples active connection count from `pg_stat_activity`.
+- **TCP Port Prober & Latency Matrix**: High-speed parallel TCP probes across critical service ports (22, 53, 80, 443, 3000, 5432, 6379, 8080, 20128) displaying real-time open/closed status and latency in milliseconds.
+- **Filesystems & Inodes Health**: Monitors all physical mountpoints (`/proc/mounts`), calculates used vs. total GB, and checks inode utilization to preempt disk exhaustion.
+- **Systemd Service Reliability**: Evaluates `systemctl --failed` to instantly surface failing or degraded daemon units.
+- **SSL / TLS Certificate Expiry**: Probes port 443 TLS handshake, extracts subject domain, issuer, and days remaining with graduated visual warnings.
+
+### 3. Live Process Tree & Resource Analysis
 - Collects and parses top active processes (`ps -eo pid,user,%cpu,%mem,vsz,rss,stat,time,comm --sort=-%cpu`).
-- Instant search filter by command name, user, or PID.
+- Filter by command name, user, or PID.
 - Dynamic color-coding for high CPU and memory consumers.
 
-### 3. Critical Linux System Journal Monitoring
+### 4. Critical Linux System Journal Monitoring
 - Scans `journalctl -p err..emerg -n 20 --no-pager -o short-iso` for critical system-level errors.
 - Automatic fallback to `dmesg --level=err,warn -T` on stripped kernel environments.
-- Structured output tagged by unit, timestamp, and severity.
 
-### 4. Zero Arbitrary Shell Guarantee
-- NexusOps forbids arbitrary remote shell commands (`ssh`, `sh -c`, `eval`).
-- All remediations are schema-validated, allowlisted by agent policy, run under strict local timeouts, and verified post-execution:
-  - `DOCKER_LIST_CONTAINERS`
-  - `DOCKER_GET_LOGS`
-  - `DOCKER_RESTART_CONTAINER`
-  - `GET_PROCESS_LIST`
-  - `GET_CRITICAL_LOGS`
-  - `COLLECT_DIAGNOSTICS`
-  - `RESTART_SERVICE` (allowlisted systemd services only)
-  - `ROTATE_LOGS`
-
-### 5. Multi-Architecture Support
-- **x86_64**: Standard AMD64 Linux servers (Ubuntu, Rocky Linux, Debian).
-- **ARMv7**: 32-bit ARM devices (Raspberry Pi 2/3/4 running Raspbian 12).
-- **ARM64**: 64-bit ARM servers (AWS Graviton, Apple Silicon, Raspberry Pi 64-bit).
-
-### 6. Native 9Router AI Integration
-- Powered by `9Router` LLM gateway (`ag/gemini-3.8-flash`).
-- Directly correlates live server telemetry, resource spikes, and journal errors to generate root-cause hypotheses and recommended allowlisted remediation steps.
+### 5. Zero Arbitrary Shell Guarantee
+- NexusOps strictly forbids arbitrary remote shell execution (`ssh`, `sh -c`, `eval`).
+- All remediations are schema-validated, allowlisted by agent policy, run under local timeouts, and verified post-execution.
 
 ---
 
-## Quick Start (Docker Compose)
+## Compilation & Deployment Runbook
 
-### 1. Launch the NexusOps Stack
+### Build Agent Binaries (Containerized Go)
+
 ```bash
-cd docker
-docker-compose up -d
-```
-
-### 2. Access the Applications
-- **Web Console**: `http://<SERVER_IP>:3000`
-- **Backend API**: `http://<SERVER_IP>:8080/api`
-- **9Router AI Gateway**: `http://<SERVER_IP>:20128`
-- **Default Credentials**: `admin@example.com` / `password`
-
-### 3. Deploy Agents on Remote Machines
-
-#### Build Agent Binaries (via Containerized Go)
-```bash
-# x86_64 (Standard Linux)
+# Build x86_64 Agent (Standard Linux / Ubuntu / Debian / Rocky)
 docker run --rm -v $(pwd)/agent:/src -w /src \
   golang:1.22-alpine go build -ldflags="-s -w" -o nexusops-agent main.go
 
-# ARMv7 (Raspberry Pi 32-bit)
+# Build ARMv7 Agent (Raspberry Pi 32-bit / ARMv7l)
 docker run --rm -v $(pwd)/agent:/src -w /src \
-  -e GOOS=linux -e GOARCH=arm -e GOARM=7 \
+  -e GOOS=linux -e GOARCH=arm -e GOARM=7 -e CGO_ENABLED=0 \
   golang:1.22-alpine go build -ldflags="-s -w" -o nexusops-agent-armv7 main.go
+
+# Fix local file permissions
+docker run --rm -v $(pwd)/agent:/src alpine chown -R 1000:1000 /src
 ```
 
-#### Enroll & Run Agent
-```bash
-./nexusops-agent \
-  -server http://<SERVER_IP>:8080/api \
-  -token <ENROLLMENT_TOKEN> \
-  -name "MyServer" \
-  -config ~/.nexusops/agent.json
-```
+### Install as Systemd Service
 
-#### Run as Systemd Service
 ```ini
 [Unit]
-Description=NexusOps Linux Agent
-After=network.target
+Description=NexusOps Infrastructure Agent
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
@@ -183,10 +167,43 @@ User=root
 ExecStart=/usr/local/bin/nexusops-agent -config /etc/nexusops/agent.json
 Restart=always
 RestartSec=5
+KillMode=process
+LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now nexusops-agent
+sudo systemctl status nexusops-agent
+```
+
+### Edge Device Tuning (Raspberry Pi)
+
+To expand virtual swap memory on Raspberry Pi for stability during heavy workloads:
+```bash
+sudo sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=1536/' /etc/dphys-swapfile
+sudo systemctl restart dphys-swapfile
+free -h  # Verify swap is 1.5 GiB
+```
+
+Ensure user access to the Docker socket:
+```bash
+sudo usermod -aG docker thomas
+sudo chmod 666 /var/run/docker.sock
+```
+
+---
+
+## Access & Endpoints
+
+- **Web Dashboard**: [http://192.168.68.117:3000](http://192.168.68.117:3000)
+- **Servers Fleet View**: [http://192.168.68.117:3000/servers](http://192.168.68.117:3000/servers)
+- **Backend API**: [http://192.168.68.117:8080/api](http://192.168.68.117:8080/api)
+- **9Router AI Gateway**: [http://192.168.68.117:20128](http://192.168.68.117:20128)
+- **Default Credentials**: `admin@example.com` / `password`
 
 ---
 
